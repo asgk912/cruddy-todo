@@ -65,14 +65,13 @@ exports.update = (id, text, callback) => {
   //   callback(null, { id, text });
   // }
 
-
   // create directory for file
   var fileName = path.join(exports.dataDir, `${id}.txt`);
   // read the file
   fs.readFile(fileName, (err, fileData) => {
     // if file is not present, we have error, so throw an error
     if (err) {
-      throw ('error reading file while in update');
+      callback(new Error(`No file with id: ${id}`));
     // if file is present, update the file with text
     } else {
       fs.writeFile(fileName, text, (err) => {
@@ -84,7 +83,6 @@ exports.update = (id, text, callback) => {
       });
     }
   });
-
 };
 
 exports.delete = (id, callback) => {

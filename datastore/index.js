@@ -9,8 +9,19 @@ var items = {};
 
 exports.create = (text, callback) => {
   var id = counter.getNextUniqueId();
+  console.log(`at Create: ${id}`);
   items[id] = text;
-  callback(null, { id, text });
+
+  var fileName = path.join(exports.dataDir, `${id}.txt`);
+
+  fs.writeFile(fileName, text, (err) => {
+    if (err) {
+      console.log('error in writing a new file of new todo');
+    } else {
+      callback(null, {id, text});
+    }
+  });
+  // callback(null, { id, text });
 };
 
 exports.readAll = (callback) => {

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const _ = require('underscore');
+// const Promise = require('bluebird');
 const counter = require('./counter');
 
 var items = {};
@@ -22,54 +23,69 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
+
+  var promiseReadFile = (fileName) => {
+    return new Promise((resolve, reject) => {
+      var filePath = path.join(exports.dataDir, fileName);
+      fs.readFile(filePath, (err, fileData) =>{
+        if (err) {
+          reject(err);
+        } else {
+          var id = fileName.substring(0, fileName.length - 4);
+          var text = fileData.toString();
+
+          resolve({id, text});
+        }
+      });
+    });
+  };
+
   fs.readdir(exports.dataDir, (err, files) => {
     if (err) {
       throw ('error in readAll files');
     } else {
-      var data = [];
+      Promise.all(
+        files.map((fileName) => {
+          return promiseReadFile(fileName);
+        })
+      )
+        .then((data) => {
+          callback(null, data);
+        })
+        .catch((error)=>{
+          console.log('error reading all files');
+        });
 
-      // files.forEach((fileName) => {
-      //   var id = fileName.substring(0, fileName.length - 4);
+      // callback(null, data);
+    }
+  });
 
-      //   fs.readFile(exports.dataDir + fileName, (err, txt) => {
-      //     if (err) {
-      //       throw ('error individual file in readAll');
-      //     } else {
-      //       // console.log('fs read in readdir', txt);
-      //       console.log({id, txt});
-      //       data.push({id, txt});
-      //     }
-      //   });
-      // });
+};
 
-      callback(null, data);
+exports.readOne = (id, callback) => {
+  // create a variable that holds directory for file
+  var fileName = path.join(exports.dataDir, `${id}.txt`);
+  // read the file
+  fs.readFile(fileName, (err, fileData) => {
+    // if file is not present, throw an error
+    if (err) {
+      callback(new Error(`No file with id: ${id}`));
+    // if file is present, invoke callback function with object of id and txt
+    } else {
+      // change buffer to string
+      let text = fileData.toString();
+
+      callback(null, {id, text});
     }
   });
 };
 
-exports.readOne = (id, callback) => {
-  var text = items[id];
-  if (!text) {
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    callback(null, { id, text });
-  }
-};
-
 exports.update = (id, text, callback) => {
-  // var item = items[id];
-  // if (!item) {
-  //   callback(new Error(`No item with id: ${id}`));
-  // } else {
-  //   items[id] = text;
-  //   callback(null, { id, text });
-  // }
-
-  // create directory for file
+  // create a variable that holds directory for file
   var fileName = path.join(exports.dataDir, `${id}.txt`);
   // read the file
   fs.readFile(fileName, (err, fileData) => {
-    // if file is not present, we have error, so throw an error
+    // if file is not present, throw an error
     if (err) {
       callback(new Error(`No file with id: ${id}`));
     // if file is present, update the file with text
@@ -86,14 +102,16 @@ exports.update = (id, text, callback) => {
 };
 
 exports.delete = (id, callback) => {
-  var item = items[id];
-  delete items[id];
-  if (!item) {
-    // report an error if item not found
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    callback();
-  }
+  // create a variable that holds directory for file
+  var fileName = path.join(exports.dataDir, `${id}.txt`);
+  // remove the file
+  fs.unlink(fileName, (err) => {
+    if (err) {
+      callback(new Error(`No file with id: ${id}`));
+    } else {
+      callback();
+    }
+  });
 };
 
 // Config+Initialization code -- DO NOT MODIFY /////////////////////////////////

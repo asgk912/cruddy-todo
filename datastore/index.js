@@ -9,8 +9,6 @@ var items = {};
 
 exports.create = (text, callback) => {
   counter.getNextUniqueId((err, id) => {
-    items[id] = text;
-
     var fileName = path.join(exports.dataDir, `${id}.txt`);
 
     fs.writeFile(fileName, text, (err) => {
@@ -24,10 +22,29 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-  var data = _.map(items, (text, id) => {
-    return { id, text };
+  fs.readdir(exports.dataDir, (err, files) => {
+    if (err) {
+      throw ('error in readAll files');
+    } else {
+      var data = [];
+
+      // files.forEach((fileName) => {
+      //   var id = fileName.substring(0, fileName.length - 4);
+
+      //   fs.readFile(exports.dataDir + fileName, (err, txt) => {
+      //     if (err) {
+      //       throw ('error individual file in readAll');
+      //     } else {
+      //       // console.log('fs read in readdir', txt);
+      //       console.log({id, txt});
+      //       data.push({id, txt});
+      //     }
+      //   });
+      // });
+
+      callback(null, data);
+    }
   });
-  callback(null, data);
 };
 
 exports.readOne = (id, callback) => {
@@ -40,13 +57,34 @@ exports.readOne = (id, callback) => {
 };
 
 exports.update = (id, text, callback) => {
-  var item = items[id];
-  if (!item) {
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    items[id] = text;
-    callback(null, { id, text });
-  }
+  // var item = items[id];
+  // if (!item) {
+  //   callback(new Error(`No item with id: ${id}`));
+  // } else {
+  //   items[id] = text;
+  //   callback(null, { id, text });
+  // }
+
+
+  // create directory for file
+  var fileName = path.join(exports.dataDir, `${id}.txt`);
+  // read the file
+  fs.readFile(fileName, (err, fileData) => {
+    // if file is not present, we have error, so throw an error
+    if (err) {
+      throw ('error reading file while in update');
+    // if file is present, update the file with text
+    } else {
+      fs.writeFile(fileName, text, (err) => {
+        if (err) {
+          throw ('error writing file while in update');
+        } else {
+          callback(null, {id, text});
+        }
+      });
+    }
+  });
+
 };
 
 exports.delete = (id, callback) => {
